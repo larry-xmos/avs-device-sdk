@@ -117,6 +117,9 @@ bool PortAudioMicrophoneWrapper::initialize() {
     return true;
 }
 
+FILE *wavfile = NULL;
+int seconds = 0;
+
 bool PortAudioMicrophoneWrapper::startStreamingMicrophoneData() {
     std::lock_guard<std::mutex> lock{m_mutex};
     PaError err = Pa_StartStream(m_paStream);
@@ -124,6 +127,8 @@ bool PortAudioMicrophoneWrapper::startStreamingMicrophoneData() {
         ConsolePrinter::simplePrint("Failed to start PortAudio stream");
         return false;
     }
+    wavfile = fopen("/tmp/in.raw", "rb");
+    ACSDK_LOG(alexaClientSDK::avsCommon::utils::logger::Level::INFO, alexaClientSDK::avsCommon::utils::logger::LogEntry("FileIO", "inFileOpen"));
     return true;
 }
 
@@ -134,6 +139,8 @@ bool PortAudioMicrophoneWrapper::stopStreamingMicrophoneData() {
         ConsolePrinter::simplePrint("Failed to stop PortAudio stream");
         return false;
     }
+    fclose(wavfile);
+    ACSDK_LOG(alexaClientSDK::avsCommon::utils::logger::Level::INFO, alexaClientSDK::avsCommon::utils::logger::LogEntry("FileIO", "inFileClosed"));
     return true;
 }
 
@@ -145,6 +152,16 @@ int PortAudioMicrophoneWrapper::PortAudioCallback(
     PaStreamCallbackFlags statusFlags,
     void* userData) {
     PortAudioMicrophoneWrapper* wrapper = static_cast<PortAudioMicrophoneWrapper*>(userData);
+    if (fread((void*)inputBuffer, 2, numSamples, wavfile) < 2) {
+      memset((void*)inputBuffer, 0, numSamples * 2);
+    }
+    else {
+      int n = (int)(ftell(wavfile) / 2) / (int)SAMPLE_RATE;
+      if (n > seconds) {
+        ACSDK_LOG(alexaClientSDK::avsCommon::utils::logger::Level::INFO, alexaClientSDK::avsCommon::utils::logger::LogEntry("FileIO", "timeElapsed").d("seconds", n));
+        seconds = n;
+      }
+    }
     ssize_t returnCode = wrapper->m_writer->write(inputBuffer, numSamples);
     if (returnCode <= 0) {
         ConsolePrinter::simplePrint("Failed to write to stream.");
