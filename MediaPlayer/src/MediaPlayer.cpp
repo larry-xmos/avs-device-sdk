@@ -142,12 +142,19 @@ static void collectOneTag(const GstTagList* tagList, const gchar* tag, gpointer 
     }
 }
 
+FILE *outfile = NULL;
+int outsecs = 0;
+
 std::shared_ptr<MediaPlayer> MediaPlayer::create(
     std::shared_ptr<avsCommon::sdkInterfaces::HTTPContentFetcherInterfaceFactoryInterface> contentFetcherFactory,
     SpeakerInterface::Type type,
     std::string name) {
     ACSDK_DEBUG9(LX("createCalled"));
     std::shared_ptr<MediaPlayer> mediaPlayer(new MediaPlayer(contentFetcherFactory, type, name));
+    if (name == "SpeakMediaPlayer") {
+      outfile = fopen("/tmp/out.raw", "wb");
+    }
+    ACSDK_LOG(alexaClientSDK::avsCommon::utils::logger::Level::INFO, alexaClientSDK::avsCommon::utils::logger::LogEntry("FileOutput", "fileOpen"));
     if (mediaPlayer->init()) {
         return mediaPlayer;
     } else {
@@ -167,6 +174,12 @@ MediaPlayer::~MediaPlayer() {
 
     g_source_remove(m_busWatchId);
     g_main_loop_unref(m_mainLoop);
+
+    if (outfile != NULL) {
+      fclose(outfile);
+      outfile = NULL;
+    }
+    ACSDK_LOG(alexaClientSDK::avsCommon::utils::logger::Level::INFO, alexaClientSDK::avsCommon::utils::logger::LogEntry("FileOutput", "fileClosed"));
 }
 
 MediaPlayer::SourceId MediaPlayer::setSource(
@@ -571,6 +584,27 @@ bool MediaPlayer::init() {
     return true;
 }
 
+static GstFlowReturn newsample(GstElement *sink, void *data)
+{
+  GstSample *sample;
+  GstBuffer *buffer;
+  GstMapInfo map;
+
+  g_signal_emit_by_name(sink, "pull-sample", &sample);
+  buffer = gst_sample_get_buffer(sample);
+  gst_buffer_map(buffer, &map, GST_MAP_READ);
+  fwrite(map.data, 1, map.size, outfile); // all media players write to the same file
+  int n = (int)(ftell(outfile) / 2) / (int)24000;
+  if (n > outsecs) {
+    ACSDK_LOG(alexaClientSDK::avsCommon::utils::logger::Level::INFO, alexaClientSDK::avsCommon::utils::logger::LogEntry("FileOutput", "timeElapsed").d("seconds", n));
+    outsecs = n;
+  }
+  gst_buffer_unmap(buffer, &map);
+  gst_sample_unref(sample);
+
+  return GST_FLOW_OK;
+}
+
 bool MediaPlayer::setupPipeline() {
     m_pipeline.decodedQueue = gst_element_factory_make("queue", "decodedQueue");
     // Do not send signals or messages. Let the decoder buffer messages dictate application logic.
@@ -592,7 +626,7 @@ bool MediaPlayer::setupPipeline() {
         return false;
     }
 
-    m_pipeline.audioSink = gst_element_factory_make("alsasink", "audio_sink");
+    m_pipeline.audioSink = gst_element_factory_make("appsink", "audio_sink");
     if (!m_pipeline.audioSink) {
         ACSDK_ERROR(LX("setupPipelineFailed").d("reason", "createAudioSinkElementFailed"));
         return false;
@@ -653,6 +687,11 @@ bool MediaPlayer::setupPipeline() {
     } else {
         ACSDK_DEBUG9(LX("noOutputConversion"));
     }
+
+    // https://gstreamer.freedesktop.org/documentation/tutorials/basic/short-cutting-the-pipeline.html
+    // except for return value of new-sample callback function - needs to return OK to avoid the sink blocking
+    g_object_set(m_pipeline.audioSink, "emit-signals", TRUE, "caps", caps, NULL);
+    g_signal_connect(m_pipeline.audioSink, "new-sample", G_CALLBACK(newsample), NULL);
 
     // clean up caps object
     gst_caps_unref(caps);
