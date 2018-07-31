@@ -14,6 +14,7 @@
  */
 
 #include <cctype>
+#include <unistd.h>
 
 #include <AVSCommon/SDKInterfaces/SpeakerInterface.h>
 #include <AVSCommon/Utils/Logger/Logger.h>
@@ -92,6 +93,15 @@ void UserInputManager::run() {
         return;
     }
     m_interactionManager->begin();
+
+#if 0 // batch mode
+    // run for a fixed number of seconds
+    for (int i = 0; i < 60; i++) {
+      usleep(1000000);
+    }
+    return;
+#endif
+
     while (true) {
         char x;
         std::cin >> x;
