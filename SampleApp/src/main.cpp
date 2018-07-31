@@ -31,11 +31,16 @@ int main(int argc, char** argv) {
     std::string pathToInputFolder;
     std::string logLevel;
 
-#if defined(KWD_KITTAI) || defined(KWD_SENSORY)
+#if defined(KWD_KITTAI) || defined(KWD_SENSORY) || \
+    (defined KWD_AMAZONLITE && defined KWD_AMAZONLITE_DYNAMIC_MODEL_LOADING)
     if (argc < 3) {
         alexaClientSDK::sampleApp::ConsolePrinter::simplePrint(
             "USAGE: " + std::string(argv[0]) +
+#if defined KWD_AMAZONLITE && defined KWD_AMAZONLITE_DYNAMIC_MODEL_LOADING
+            " <path_to_AlexaClientSDKConfig.json> <path_to_model_file> [log_level]");
+#else
             " <path_to_AlexaClientSDKConfig.json> <path_to_inputs_folder> [log_level]");
+#endif
         return EXIT_FAILURE;
     } else {
         pathToInputFolder = std::string(argv[2]);
