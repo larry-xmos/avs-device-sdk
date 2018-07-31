@@ -118,6 +118,7 @@ bool PortAudioMicrophoneWrapper::initialize() {
 }
 
 FILE *infile = NULL;
+int insecs_first = -1;
 int insecs = 0;
 
 bool PortAudioMicrophoneWrapper::startStreamingMicrophoneData() {
@@ -156,9 +157,13 @@ int PortAudioMicrophoneWrapper::PortAudioCallback(
       memset((void*)inputBuffer, 0, numSamples * 2);
     }
     else {
-      int n = (int)(ftell(infile) / 2) / (int)SAMPLE_RATE;
+      int n = (int)timeInfo->currentTime;
+      if (insecs_first == -1) {
+        insecs_first = n;
+        insecs = n;
+      }
       if (n > insecs) {
-        ACSDK_LOG(alexaClientSDK::avsCommon::utils::logger::Level::INFO, alexaClientSDK::avsCommon::utils::logger::LogEntry("FileInput", "timeElapsed").d("seconds", n));
+        ACSDK_LOG(alexaClientSDK::avsCommon::utils::logger::Level::INFO, alexaClientSDK::avsCommon::utils::logger::LogEntry("FileInput", "timeElapsed").d("seconds", n - insecs_first));
         insecs = n;
       }
     }
