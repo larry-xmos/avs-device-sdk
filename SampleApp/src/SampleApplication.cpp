@@ -22,6 +22,8 @@
 #include <KittAi/KittAiKeyWordDetector.h>
 #elif KWD_SENSORY
 #include <Sensory/SensoryKeywordDetector.h>
+#elif KWD_AMAZONLITE
+#include <AmazonLite/PryonLiteKeywordDetector.h>
 #endif
 
 #ifdef ENABLE_ESP
@@ -581,6 +583,27 @@ bool SampleApplication::initialize(
         pathToInputFolder + "/spot-alexa-rpi-31000.snsr");
     if (!m_keywordDetector) {
         alexaClientSDK::sampleApp::ConsolePrinter::simplePrint("Failed to create SensoryKeyWordDetector!");
+        return false;
+    }
+#elif defined(KWD_AMAZONLITE)
+#ifdef KWD_AMAZONLITE_DYNAMIC_MODEL_LOADING
+    m_keywordDetector = kwd::PryonLiteKeywordDetector::create(
+        sharedDataStream,
+        compatibleAudioFormat,
+        {keywordObserver},
+        std::unordered_set<
+            std::shared_ptr<alexaClientSDK::avsCommon::sdkInterfaces::KeyWordDetectorStateObserverInterface>>(),
+        pathToInputFolder);
+#else
+    m_keywordDetector = kwd::PryonLiteKeywordDetector::create(
+        sharedDataStream,
+        compatibleAudioFormat,
+        {keywordObserver},
+        std::unordered_set<
+            std::shared_ptr<alexaClientSDK::avsCommon::sdkInterfaces::KeyWordDetectorStateObserverInterface>>());
+#endif
+    if (!m_keywordDetector) {
+        alexaClientSDK::sampleApp::ConsolePrinter::simplePrint("Failed to create AmazonLiteKeyWordDetector!");
         return false;
     }
 #endif
