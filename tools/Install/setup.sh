@@ -84,22 +84,22 @@ echo ""
 echo "################################################################################"
 echo "################################################################################"
 
-read input
-input=$(echo $input | awk '{print tolower($0)}')
-if [ $input == 'quit' ]
-then
-  exit 1
-elif [ $input == 'agree' ]
-then
+#read input
+#input=$(echo $input | awk '{print tolower($0)}')
+#if [ $input == 'quit' ]
+#then
+#  exit 1
+#elif [ $input == 'agree' ]
+#then
   echo "################################################################################"
   echo "Proceeding with installation"
   echo "################################################################################"
-else
-  echo "################################################################################"
-  echo 'Unknown option'
-  echo "################################################################################"
-  exit 1
-fi
+#else
+#  echo "################################################################################"
+#  echo 'Unknown option'
+#  echo "################################################################################"
+#  exit 1
+#fi
 
 AUTH_DETAILS=$CURRENT_DIR/.auth_details
 if [[ -e $AUTH_DETAILS ]]; then
@@ -214,53 +214,53 @@ then
     echo "==============> INSTALLING REQUIRED TOOLS AND PACKAGE ============"
     echo
 
-    sudo apt-get update
-    sudo apt-get -y install git gcc cmake build-essential libsqlite3-dev libcurl4-openssl-dev libfaad-dev libsoup2.4-dev libgcrypt20-dev libgstreamer-plugins-bad1.0-dev gstreamer1.0-plugins-good libasound2-dev sox gedit vim python3-pip
-    pip install flask commentjson
+    #sudo apt-get update
+    #sudo apt-get -y install git gcc cmake build-essential libsqlite3-dev libcurl4-openssl-dev libfaad-dev libsoup2.4-dev libgcrypt20-dev libgstreamer-plugins-bad1.0-dev gstreamer1.0-plugins-good libasound2-dev sox gedit vim python3-pip
+    #pip install flask commentjson
 
     # create / paths
     echo
     echo "==============> CREATING PATHS AND GETTING SOUND FILES ============"
     echo
 
-    mkdir -p $SOURCE_PATH
-    mkdir -p $THIRD_PARTY_PATH
+    #mkdir -p $SOURCE_PATH
+    #mkdir -p $THIRD_PARTY_PATH
     mkdir -p $BUILD_PATH
-    mkdir -p $SOUNDS_PATH
-    mkdir -p $DB_PATH
+    #mkdir -p $SOUNDS_PATH
+    #mkdir -p $DB_PATH
 
     # build port audio
     echo
     echo "==============> BUILDING PORT AUDIO =============="
     echo
 
-    cd $THIRD_PARTY_PATH
-    wget -c $PORT_AUDIO_DOWNLOAD_URL
-    tar zxf $PORT_AUDIO_FILE
+    #cd $THIRD_PARTY_PATH
+    #wget -c $PORT_AUDIO_DOWNLOAD_URL
+    #tar zxf $PORT_AUDIO_FILE
 
-    cd portaudio
-    ./configure --without-jack
-    make
+    #cd portaudio
+    #./configure --without-jack
+    #make
 
     #get sensory and build
     echo
     echo "==============> CLONING AND BUILDING SENSORY =============="
     echo
 
-    cd $THIRD_PARTY_PATH
-    git clone git://github.com/Sensory/alexa-rpi.git
-    pushd alexa-rpi > /dev/null
-    git checkout $SENSORY_MODEL_HASH -- models/spot-alexa-rpi-31000.snsr
-    popd > /dev/null
-    bash ./alexa-rpi/bin/license.sh
+    #cd $THIRD_PARTY_PATH
+    #git clone git://github.com/Sensory/alexa-rpi.git
+    #pushd alexa-rpi > /dev/null
+    #git checkout $SENSORY_MODEL_HASH -- models/spot-alexa-rpi-31000.snsr
+    #popd > /dev/null
+    #bash ./alexa-rpi/bin/license.sh
 
     #get sdk
     echo
     echo "==============> CLONING SDK =============="
     echo
 
-    cd $SOURCE_PATH
-    git clone -b xmos_v1.6 git://github.com/xmos/avs-device-sdk.git
+    #cd $SOURCE_PATH
+    #git clone -b xmos_v1.6 git://github.com/xmos/avs-device-sdk.git
 
     # make the SDK
     echo
@@ -268,6 +268,7 @@ then
     echo
 
     cd $BUILD_PATH
+    set -x
     cmake "$SOURCE_PATH/avs-device-sdk" \
     -DSENSORY_KEY_WORD_DETECTOR=ON \
     -DSENSORY_KEY_WORD_DETECTOR_LIB_PATH=$THIRD_PARTY_PATH/alexa-rpi/lib/libsnsr.a \
@@ -277,12 +278,13 @@ then
     -DPORTAUDIO_INCLUDE_DIR="$THIRD_PARTY_PATH/portaudio/include" \
     -DCMAKE_BUILD_TYPE=DEBUG
 
-    cd $BUILD_PATH
-    make SampleApp -j2
+    make -C $BUILD_PATH SampleApp -j2
+    set +x
 
 else
-    cd $BUILD_PATH
-    make SampleApp -j2
+    set -x
+    make -C $BUILD_PATH SampleApp -j2
+    set +x
 fi
 
 echo
