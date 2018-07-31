@@ -216,11 +216,11 @@ void UIManager::onSetIndicator(avsCommon::avs::IndicatorState state) {
 }
 
 void UIManager::printWelcomeScreen() {
-    m_executor.submit([]() { ConsolePrinter::simplePrint(ALEXA_WELCOME_MESSAGE); });
+    //m_executor.submit([]() { ConsolePrinter::simplePrint(ALEXA_WELCOME_MESSAGE); });
 }
 
 void UIManager::printHelpScreen() {
-    m_executor.submit([]() { ConsolePrinter::simplePrint(HELP_MESSAGE); });
+    //m_executor.submit([]() { ConsolePrinter::simplePrint(HELP_MESSAGE); });
 }
 
 void UIManager::printSettingsScreen() {
