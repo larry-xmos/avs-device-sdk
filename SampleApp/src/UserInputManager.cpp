@@ -73,6 +73,8 @@ void UserInputManager::run() {
     }
     m_interactionManager->begin();
 
+    m_interactionManager->changeSetting("locale", "fr-FR");
+
     // run for a fixed number of seconds
     for (int i = 0; i < 600; i++) {
       usleep(1000000);
