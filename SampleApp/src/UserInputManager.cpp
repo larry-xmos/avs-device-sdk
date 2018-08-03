@@ -94,6 +94,8 @@ void UserInputManager::run() {
     }
     m_interactionManager->begin();
 
+    m_interactionManager->changeSetting("locale", "fr-FR");
+
 #if 0 // batch mode
     // run for a fixed number of seconds
     for (int i = 0; i < 60; i++) {
